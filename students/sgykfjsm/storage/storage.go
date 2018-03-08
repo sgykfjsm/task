@@ -26,6 +26,7 @@ type BoltDBStorage struct {
 	BucketName []byte
 }
 
+// NewBoltDBStorage generates the new BoltDBStorage object
 func NewBoltDBStorage(filePath, bucketName string) (*BoltDBStorage, error) {
 	b, err := bolt.Open(filePath, 0644, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
@@ -38,7 +39,7 @@ func NewBoltDBStorage(filePath, bucketName string) (*BoltDBStorage, error) {
 	}, nil
 }
 
-// Add adds new task. If succeeded, Add returns Task with Nil. If not, Add returns error and Task is nil
+// Add adds new task. If succeeded, Add returns the pointer of Task with Nil. If not, Add returns error and the pointer of Task is nil
 func (bs *BoltDBStorage) Add(description string) (task *Task, err error) {
 	err = bs.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists(bs.BucketName)
@@ -71,6 +72,7 @@ func (bs *BoltDBStorage) Add(description string) (task *Task, err error) {
 	return
 }
 
+// PUT updates Task object
 func (bs *BoltDBStorage) Put(t *Task) (err error) {
 	err = bs.Update(func(tx *bolt.Tx) error {
 		b, err := json.Marshal(t)
@@ -88,7 +90,7 @@ func (bs *BoltDBStorage) Put(t *Task) (err error) {
 	return err
 }
 
-// Find retrieves a single TODOs by given taskNo.
+// Find retrieves a single TODO based on given taskNo.
 func (bs *BoltDBStorage) Find(taskNo int) (task *Task, err error) {
 	err = bs.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bs.BucketName)
@@ -107,7 +109,7 @@ func (bs *BoltDBStorage) Find(taskNo int) (task *Task, err error) {
 	return
 }
 
-// Find retrieves a single TODOs by given taskNo.
+// Find retrieves all TODOs.
 func (bs *BoltDBStorage) FindAll() (tasks []Task, err error) {
 	bs.View(func(tx *bolt.Tx) error {
 		data := tx.Bucket(bs.BucketName)

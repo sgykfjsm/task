@@ -70,8 +70,7 @@ func (bs *BoltDBStorage) FindByTaskNo(taskNo int) (task *Task, err error) {
 	err = bs.View(func(tx *bolt.Tx) (err error) {
 		// TODO Write the code to find the task connected to given `taskNo`
 		// Hint1: When you want to iterate the data over keys, use `Cursor`(See https://github.com/boltdb/bolt#iterating-over-keys).
-		// Hint2: You can use built-in function `copy(dst, src)` to copy the values of slice
-		// Hint3: `FindByTaskNo` is using the given `taskNo` to search the data. This is **NOT** the key of the value.
+		// Hint2: `FindByTaskNo` is using the given `taskNo` to search the data. This is **NOT** the key of the value.
 		//        And `taskNo` is the number of **UN**finished tasks in the list. You can filter the tasks by Task.Finished
 		//        `listCommand` in `main` function might be helpful.
 		return

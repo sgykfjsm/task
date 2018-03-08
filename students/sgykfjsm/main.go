@@ -31,14 +31,14 @@ func main() {
 		Action: func(c *cli.Context) error {
 			args := c.Args()
 			if len(args) == 0 {
-				log.Fatal("ERROR: Please give some description to add task")
+				log.Fatal("ERROR: Please give some description to add task.")
 			}
 			description := strings.Join(args, " ")
 			task, err := db.Add(description)
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Added %q to your task list\n", task.Description)
+			fmt.Printf("Added %q to your task list.\n", task.Description)
 
 			return nil
 		},
@@ -83,9 +83,11 @@ func main() {
 			}
 
 			fmt.Println("You have the following tasks:")
-			for i, task := range tasks {
+			i := 1
+			for _, task := range tasks {
 				if !task.Finished {
-					fmt.Printf("%d. %s\n", i+1, task.Description)
+					fmt.Printf("%d. %s\n", i, task.Description)
+					i++
 				}
 			}
 			return nil

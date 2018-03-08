@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
-	"github.com/pkg/errors"
 )
 
 type Task struct {
@@ -17,8 +16,8 @@ type Task struct {
 
 type Storage interface {
 	Add(string) (int, error)
-	Do(int) error
-	List()
+	FindByTaskNo(int) error
+	FindAll()
 }
 
 type BoltDBStorage struct {
@@ -41,15 +40,15 @@ func NewBoltDBStorage(filePath, bucketName string) (*BoltDBStorage, error) {
 
 // Add adds new task. If succeeded, Add returns the pointer of Task with Nil. If not, Add returns error and the pointer of Task is nil
 func (bs *BoltDBStorage) Add(description string) (task *Task, err error) {
-	err = bs.Update(func(tx *bolt.Tx) error {
+	err = bs.Update(func(tx *bolt.Tx) (err error) {
 		bucket, err := tx.CreateBucketIfNotExists(bs.BucketName)
 		if err != nil {
-			return err
+			return
 		}
 
 		id, err := bucket.NextSequence()
 		if err != nil {
-			return err
+			return
 		}
 
 		task = &Task{
@@ -59,7 +58,7 @@ func (bs *BoltDBStorage) Add(description string) (task *Task, err error) {
 
 		buf, err := json.Marshal(task)
 		if err != nil {
-			return err
+			return
 		}
 
 		return bucket.Put(task.SystemID, buf)
@@ -74,36 +73,48 @@ func (bs *BoltDBStorage) Add(description string) (task *Task, err error) {
 
 // PUT updates Task object
 func (bs *BoltDBStorage) Put(t *Task) (err error) {
-	err = bs.Update(func(tx *bolt.Tx) error {
+	err = bs.Update(func(tx *bolt.Tx) (err error) {
 		b, err := json.Marshal(t)
 		if err != nil {
-			return errors.Wrapf(err, "failed to marshal json with %v", t)
+			return
 		}
 
 		if err := tx.Bucket(bs.BucketName).Put(t.SystemID, b); err != nil {
 			return err
 		}
 
-		return nil
+		return
 	})
 
 	return err
 }
 
 // Find retrieves a single TODO based on given taskNo.
-func (bs *BoltDBStorage) Find(taskNo int) (task *Task, err error) {
-	err = bs.View(func(tx *bolt.Tx) error {
+func (bs *BoltDBStorage) FindByTaskNo(taskNo int) (task *Task, err error) {
+	err = bs.View(func(tx *bolt.Tx) (err error) {
 		b := tx.Bucket(bs.BucketName)
 		if b == nil {
-			return nil
+			return
 		}
 
-		_, v := b.Cursor().Seek(bs.itob(taskNo))
-		if err := json.Unmarshal(v, &task); err != nil {
-			return err
+		c := b.Cursor()
+		i := 1
+		var t Task
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			if err := json.Unmarshal(v, &t); err != nil {
+				return err
+			}
+			if t.Finished {
+				continue
+			}
+			if i == taskNo {
+				task = &t
+				return
+			}
+			i++
 		}
 
-		return nil
+		return
 	})
 
 	return
@@ -111,10 +122,10 @@ func (bs *BoltDBStorage) Find(taskNo int) (task *Task, err error) {
 
 // Find retrieves all TODOs.
 func (bs *BoltDBStorage) FindAll() (tasks []Task, err error) {
-	bs.View(func(tx *bolt.Tx) error {
+	bs.View(func(tx *bolt.Tx) (err error) {
 		data := tx.Bucket(bs.BucketName)
 		if data == nil {
-			return nil
+			return
 		}
 
 		data.ForEach(func(k, v []byte) error {
@@ -126,7 +137,7 @@ func (bs *BoltDBStorage) FindAll() (tasks []Task, err error) {
 			return nil
 		})
 
-		return nil
+		return
 	})
 
 	return

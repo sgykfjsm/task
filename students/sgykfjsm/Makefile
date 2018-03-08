@@ -15,6 +15,7 @@ deps:
 	fi
 
 test: build
+	$(RM) -r -v task.db
 	@if [ ! -d "bats" ]; then \
 		git clone https://github.com/sstephenson/bats.git; \
 	fi

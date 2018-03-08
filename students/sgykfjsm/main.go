@@ -58,7 +58,7 @@ func main() {
 				log.Fatal(err)
 			}
 
-			task, err := db.Find(i)
+			task, err := db.FindByTaskNo(i)
 			if err != nil {
 				log.Fatal(err)
 			}

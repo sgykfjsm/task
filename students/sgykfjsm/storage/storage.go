@@ -2,11 +2,9 @@ package storage
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"time"
 
 	"github.com/boltdb/bolt"
-	"github.com/pkg/errors"
 )
 
 type Task struct {
@@ -17,8 +15,8 @@ type Task struct {
 
 type Storage interface {
 	Add(string) (int, error)
-	Do(int) error
-	List()
+	FindByTaskNo(int) error
+	FindAll()
 }
 
 type BoltDBStorage struct {
@@ -41,28 +39,12 @@ func NewBoltDBStorage(filePath, bucketName string) (*BoltDBStorage, error) {
 
 // Add adds new task. If succeeded, Add returns the pointer of Task with Nil. If not, Add returns error and the pointer of Task is nil
 func (bs *BoltDBStorage) Add(description string) (task *Task, err error) {
-	err = bs.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists(bs.BucketName)
-		if err != nil {
-			return err
-		}
-
-		id, err := bucket.NextSequence()
-		if err != nil {
-			return err
-		}
-
-		task = &Task{
-			SystemID:    bs.itob(int(id)),
-			Description: description,
-		}
-
-		buf, err := json.Marshal(task)
-		if err != nil {
-			return err
-		}
-
-		return bucket.Put(task.SystemID, buf)
+	err = bs.Update(func(tx *bolt.Tx) (err error) {
+		// TODO Write the code to add new task into the bucket
+		// Hint1: See https://github.com/boltdb/bolt#using-keyvalue-pairs to learn how to save the data
+		// Hint2: You have to create Task object at first. Then, encode it as Json data typed `[]byte`
+		//        If you forget how to marshal the object, see https://golang.org/pkg/encoding/json/#example_Marshal
+		return
 	})
 
 	if err != nil {
@@ -74,36 +56,25 @@ func (bs *BoltDBStorage) Add(description string) (task *Task, err error) {
 
 // PUT updates Task object
 func (bs *BoltDBStorage) Put(t *Task) (err error) {
-	err = bs.Update(func(tx *bolt.Tx) error {
-		b, err := json.Marshal(t)
-		if err != nil {
-			return errors.Wrapf(err, "failed to marshal json with %v", t)
-		}
-
-		if err := tx.Bucket(bs.BucketName).Put(t.SystemID, b); err != nil {
-			return err
-		}
-
-		return nil
+	err = bs.Update(func(tx *bolt.Tx) (err error) {
+		// TODO Write the code to update the Task object
+		// Hint1: See Hints of `Add` function
+		return
 	})
 
 	return err
 }
 
 // Find retrieves a single TODO based on given taskNo.
-func (bs *BoltDBStorage) Find(taskNo int) (task *Task, err error) {
-	err = bs.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(bs.BucketName)
-		if b == nil {
-			return nil
-		}
-
-		_, v := b.Cursor().Seek(bs.itob(taskNo))
-		if err := json.Unmarshal(v, &task); err != nil {
-			return err
-		}
-
-		return nil
+func (bs *BoltDBStorage) FindByTaskNo(taskNo int) (task *Task, err error) {
+	err = bs.View(func(tx *bolt.Tx) (err error) {
+		// TODO Write the code to find the task connected to given `taskNo`
+		// Hint1: When you want to iterate the data over keys, use `Cursor`(See https://github.com/boltdb/bolt#iterating-over-keys).
+		// Hint2: You can use built-in function `copy(dst, src)` to copy the values of slice
+		// Hint3: `FindByTaskNo` is using the given `taskNo` to search the data. This is **NOT** the key of the value.
+		//        And `taskNo` is the number of **UN**finished tasks in the list. You can filter the tasks by Task.Finished
+		//        `listCommand` in `main` function might be helpful.
+		return
 	})
 
 	return
@@ -111,22 +82,10 @@ func (bs *BoltDBStorage) Find(taskNo int) (task *Task, err error) {
 
 // Find retrieves all TODOs.
 func (bs *BoltDBStorage) FindAll() (tasks []Task, err error) {
-	bs.View(func(tx *bolt.Tx) error {
-		data := tx.Bucket(bs.BucketName)
-		if data == nil {
-			return nil
-		}
-
-		data.ForEach(func(k, v []byte) error {
-			var task Task
-			if err := json.Unmarshal(v, &task); err != nil {
-				return err
-			}
-			tasks = append(tasks, task)
-			return nil
-		})
-
-		return nil
+	bs.View(func(tx *bolt.Tx) (err error) {
+		// TODO Write the code to fetch all data from the bucket and then append the result set into `tasks`
+		// Hint1: You might want to iterate over all keys. See https://github.com/boltdb/bolt#foreach
+		return
 	})
 
 	return
